@@ -4,6 +4,7 @@ from random import randint
 img_back = "galaxy.jpg"  # фон гри
 img_hero = "rocket.png"  # герой
 img_enemy = 'ufo.png'  # ворог
+img_bullet = 'bullet.png'
 # створюємо віконце
 win_width = 700
 win_height = 500
@@ -21,6 +22,10 @@ font.init()
 font2 = font.Font(None, 36)
 score = 0
 lost = 0
+goal = 15
+max_lost = 5
+
+
 class GameSprite(sprite.Sprite):
     def __init__(self, player_image, player_x, player_y,  # один рядок
                  size_x, size_y, player_speed):
@@ -31,8 +36,11 @@ class GameSprite(sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = player_x
         self.rect.y = player_y
+
     def reset(self):
         window.blit(self.image, (self.rect.x, self.rect.y))
+
+
 # клас головного гравця
 class Player(GameSprite):
     # метод для керування спрайтом стрілками клавіатури
@@ -43,8 +51,12 @@ class Player(GameSprite):
         if keys[K_d] and self.rect.x < win_width - 80:
             self.rect.x += self.speed
     # метод "постріл" (використовуємо місце гравця, щоб створити там кулю)
+
     def fire(self):
-        pass
+        bullet = Bullet(img_bullet, self.rect.centerx, self.rect.top, 15, 20, -15)
+        bullets.add(bullet)
+
+
 class Enemy(GameSprite):
     def update(self):
         self.rect.y += self.speed
@@ -53,17 +65,35 @@ class Enemy(GameSprite):
             self.rect.y = randint(80, win_width - 80)
             self.rect.y = 0
             lost = lost + 1
+
+
+class Bullet(GameSprite):
+    def update(self):
+        self.rect.y += self.speed
+        if self.rect.y < 0:
+            self.kill()
+
+
 # створюємо спрайти
 ship = Player(img_hero, 5, win_height - 100, 80, 100, 10)
 monsters = sprite.Group()
 for i in range(1, 6):
     monster = Enemy(img_enemy, randint(80, win_width - 80), -40, 80, 50, randint(1, 5))
     monsters.add(monster)
+bullets = sprite.Group()
+
+
 while run:
     # подія натискання на кнопку Закрити
     for e in event.get():
         if e.type == QUIT:
             run = False
+        elif e.type == KEYDOWN:
+            if e.key == K_SPACE:
+                fire_sound.play()
+                ship.fire()
+
+
     if not finish:
         window.blit(background, (0, 0))
         text = font2.render('Рахунок: ' + str(score), 1, (255, 255, 255))
@@ -74,6 +104,8 @@ while run:
         ship.reset()
         monsters.update()
         monsters.draw(window)
+        bullets.update()
+        bullets.draw(window)
         display.update()
 
     # цикл спрацьовує кожні 0.05 секунд
